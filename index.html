@@ -33,11 +33,6 @@
         text-align: left;
         font-weight: 700;
     }
-    h2 {
-        text-align: center;
-        font-size: 22px;
-        margin: 5px 0 20px 0;
-    }
     .section-title {
         background: #d9d9d9;
         padding: 6px 10px;
@@ -55,9 +50,6 @@
         padding: 6px 8px;
         font-size: 14px;
         flex: 1;
-    }
-    .cell strong {
-        font-weight: bold;
     }
     .signature-area {
         margin-top: 40px;
@@ -91,11 +83,12 @@
 
 <script>
 
-    // 🔐 CHAVE E URL MANTIDAS EXATAMENTE COMO PEDIDO
+    // 🔐 URL e chave pública
     const SUPABASE_URL = "https://qivhnebuhdponvtplram.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdmhuZWJ1aGRwb252dHBscmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4NTYzMjQsImV4cCI6MjA0OTQzMjMyNH0.2Dmp8BvqWgcUmMg9StRoAdbEvAUrm4yvW8jgc4J-F1M";
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // 🔧 Correção: NÃO usar const supabase, senão dá conflito
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function showDebug(msg) {
         console.log(msg);
@@ -112,9 +105,7 @@
             jornada: p.get("id_jornada")
         };
 
-        showDebug("📥 Parâmetros recebidos:");
-        showDebug("• id_empresa = " + params.empresa);
-        showDebug("• id_jornada = " + params.jornada);
+        showDebug(`📥 Parâmetros recebidos:<br>• id_empresa = ${params.empresa}<br>• id_jornada = ${params.jornada}`);
 
         return params;
     }
@@ -128,18 +119,15 @@
             return;
         }
 
-        showDebug("✔️ Parâmetros OK. Iniciando consulta ao Supabase...");
+        showDebug("✔️ Iniciando consulta ao Supabase...");
 
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
             .eq("id_empresa", p.empresa)
             .eq("id", p.jornada)
             .limit(1)
             .maybeSingle();
-
-        showDebug("📡 Resposta do Supabase:");
-        showDebug(JSON.stringify({ data, error }));
 
         if (error) {
             showDebug("❌ Erro na consulta: " + error.message);
@@ -148,23 +136,17 @@
         }
 
         if (!data) {
-            showDebug("⚠️ Nenhuma jornada encontrada.");
+            showDebug("⚠️ Nenhum registro encontrado.");
             alert("Nenhuma jornada encontrada para estes parâmetros.");
             return;
         }
 
-        showDebug("✔️ Dados encontrados. Preenchendo HTML...");
+        showDebug("✔️ Dados encontrados.");
         fillFields(data);
     }
 
     function fillFields(d) {
-
-        // ✅ AQUI: LÓGICA PEDIDA PARA MOSTRAR "placa não encontrada"
-        document.getElementById("placa").textContent =
-            d.placa_veiculo && d.placa_veiculo.trim() !== ""
-                ? d.placa_veiculo
-                : "placa não encontrada";
-
+        document.getElementById("placa").textContent = d.placa_veiculo || "-";
         document.getElementById("modelo").textContent = d.id_veiculo || "-";
         document.getElementById("km").textContent = d.tacografo || "-";
         document.getElementById("rota").textContent = d.localicacao || "-";
