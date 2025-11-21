@@ -98,20 +98,12 @@
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function showDebug(msg) {
-        console.log(msg);
-        const box = document.getElementById("debugBox");
-        box.style.display = "block";
-        box.innerHTML += msg + "<br>";
-    }
-
     function showIndicadorViagem() {
         document.getElementById("indicador-viagem").style.display = "inline-block";
     }
 
     function getParams() {
         const p = new URLSearchParams(window.location.search);
-
         return {
             empresa: p.get("id_empresa"),
             jornada: p.get("id_jornada")
@@ -126,7 +118,7 @@
             return;
         }
 
-        // 1️⃣ Buscar JORNADA
+        // 🔹 Buscar jornada
         const { data: jornada, error: jornadaError } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -142,7 +134,7 @@
 
         fillJornada(jornada);
 
-        // 2️⃣ Buscar VIAGEM usando id_viagem
+        // 🔹 Buscar viagem usando id_viagem
         if (jornada.id_viagem) {
             const { data: viagem, error: viagemError } = await sb
                 .from("viagens")
@@ -158,7 +150,7 @@
         }
     }
 
-    // 🧾 Preencher campos da JORNADA
+    // 🧾 Preencher JORNADA
     function fillJornada(d) {
         document.getElementById("placa").textContent = d.placa_veiculo || "-";
         document.getElementById("modelo").textContent = d.id_veiculo || "-";
@@ -175,9 +167,10 @@
             d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
     }
 
-    // 🚚 Preencher campos da VIAGEM
+    // 🚚 Preencher VIAGEM (AGORA TAMBÉM CIDADE DESTINO)
     function fillViagem(v) {
         if (v.origem) document.getElementById("rota").textContent = `${v.origem} → ${v.destino}`;
+        if (v.destino) document.getElementById("cidade").textContent = v.destino;
         if (v.tacografo_inicio && v.tacografo_final)
             document.getElementById("km").textContent = `${v.tacografo_inicio} → ${v.tacografo_final}`;
     }
