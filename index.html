@@ -73,9 +73,19 @@
         display: none;
         font-size: 14px;
     }
+    #indicador-viagem {
+        background: #0075ff;
+        color: white;
+        padding: 5px 10px;
+        display: none;
+        font-size: 14px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
     @media print {
         body { background: white; }
         .container { box-shadow: none; width: 100%; }
+        #indicador-viagem, #debugBox { display: none; }
     }
 </style>
 
@@ -83,11 +93,9 @@
 
 <script>
 
-    // 🔐 URL e chave pública
     const SUPABASE_URL = "https://qivhnebuhdponvtplram.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdmhuZWJ1aGRwb252dHBscmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4NTYzMjQsImV4cCI6MjA0OTQzMjMyNH0.2Dmp8BvqWgcUmMg9StRoAdbEvAUrm4yvW8jgc4J-F1M";
 
-    // 🔧 Correção: NÃO usar const supabase, senão dá conflito
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     function showDebug(msg) {
@@ -97,31 +105,29 @@
         box.innerHTML += msg + "<br>";
     }
 
+    function showIndicadorViagem() {
+        document.getElementById("indicador-viagem").style.display = "inline-block";
+    }
+
     function getParams() {
         const p = new URLSearchParams(window.location.search);
 
-        const params = {
+        return {
             empresa: p.get("id_empresa"),
             jornada: p.get("id_jornada")
         };
-
-        showDebug(`📥 Parâmetros recebidos:<br>• id_empresa = ${params.empresa}<br>• id_jornada = ${params.jornada}`);
-
-        return params;
     }
 
     async function loadData() {
         const p = getParams();
 
         if (!p.empresa || !p.jornada) {
-            showDebug("❌ Parâmetros inválidos.");
             alert("Parâmetros inválidos. Esperado: ?id_empresa=...&id_jornada=...");
             return;
         }
 
-        showDebug("✔️ Iniciando consulta ao Supabase...");
-
-        const { data, error } = await sb
+        // 1️⃣ Buscar JORNADA
+        const { data: jornada, error: jornadaError } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
             .eq("id_empresa", p.empresa)
@@ -129,23 +135,31 @@
             .limit(1)
             .maybeSingle();
 
-        if (error) {
-            showDebug("❌ Erro na consulta: " + error.message);
-            alert("Erro ao consultar o Supabase.");
+        if (jornadaError || !jornada) {
+            alert("Erro ao buscar jornada ou jornada não encontrada.");
             return;
         }
 
-        if (!data) {
-            showDebug("⚠️ Nenhum registro encontrado.");
-            alert("Nenhuma jornada encontrada para estes parâmetros.");
-            return;
-        }
+        fillJornada(jornada);
 
-        showDebug("✔️ Dados encontrados.");
-        fillFields(data);
+        // 2️⃣ Buscar VIAGEM usando id_viagem
+        if (jornada.id_viagem) {
+            const { data: viagem, error: viagemError } = await sb
+                .from("viagens")
+                .select("*")
+                .eq("id", jornada.id_viagem)
+                .limit(1)
+                .maybeSingle();
+
+            if (!viagemError && viagem) {
+                fillViagem(viagem);
+                showIndicadorViagem();
+            }
+        }
     }
 
-    function fillFields(d) {
+    // 🧾 Preencher campos da JORNADA
+    function fillJornada(d) {
         document.getElementById("placa").textContent = d.placa_veiculo || "-";
         document.getElementById("modelo").textContent = d.id_veiculo || "-";
         document.getElementById("km").textContent = d.tacografo || "-";
@@ -153,15 +167,19 @@
         document.getElementById("cidade").textContent = d.cidade || "-";
         document.getElementById("data").textContent = formatDate(d.created_at);
         document.getElementById("motorista").textContent = d.nome_motorista || "-";
-
         document.getElementById("inicio").textContent = formatDateTime(d.inicio_data);
         document.getElementById("fim").textContent = formatDateTime(d.fim_data);
         document.getElementById("horas").textContent = convertMinutes(d.total_minutos);
-
         document.getElementById("cliente").textContent = d.cliente || "-";
-
         document.getElementById("assinatura").src =
             d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
+    }
+
+    // 🚚 Preencher campos da VIAGEM
+    function fillViagem(v) {
+        if (v.origem) document.getElementById("rota").textContent = `${v.origem} → ${v.destino}`;
+        if (v.tacografo_inicio && v.tacografo_final)
+            document.getElementById("km").textContent = `${v.tacografo_inicio} → ${v.tacografo_final}`;
     }
 
     function formatDate(date) {
@@ -193,6 +211,8 @@
     <img class="logo" src="https://i.imgur.com/f9G8zE7.png" alt="Logo">
 
     <h1>Jornada de Trabalho</h1>
+
+    <div id="indicador-viagem">📌 Dados da tabela VIAGENS foram carregados</div>
 
     <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
 
