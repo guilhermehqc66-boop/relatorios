@@ -73,23 +73,17 @@
         height: auto;
         margin-bottom: 5px;
     }
-
-    /* 🔶 Caixa de debug */
     #debugBox {
         background: #fff3cd;
-        border: 1px solid #ffeeba;
-        padding: 10px;
+        border-left: 6px solid #ffcc00;
+        padding: 12px;
         margin-bottom: 20px;
-        font-size: 14px;
-        border-radius: 6px;
-        color: #856404;
         display: none;
+        font-size: 14px;
     }
-
     @media print {
         body { background: white; }
         .container { box-shadow: none; width: 100%; }
-        #debugBox { display: none !important; }
     }
 </style>
 
@@ -97,41 +91,44 @@
 
 <script>
 
-    // 🔐 SUAS CHAVES — NÃO ALTEREI NADA
+    // 🔐 CHAVE E URL MANTIDAS EXATAMENTE COMO PEDIDO
     const SUPABASE_URL = "https://qivhnebuhdponvtplram.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdmhuZWJ1aGRwb252dHBscmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4NTYzMjQsImV4cCI6MjA0OTQzMjMyNH0.2Dmp8BvqWgcUmMg9StRoAdbEvAUrm4yvW8jgc4J-F1M";
 
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 🔶 Mostra debug no topo
     function showDebug(msg) {
+        console.log(msg);
         const box = document.getElementById("debugBox");
         box.style.display = "block";
         box.innerHTML += msg + "<br>";
-        console.log(msg);
     }
 
-    // 📌 Lê os parâmetros da URL
     function getParams() {
         const p = new URLSearchParams(window.location.search);
-        return {
+
+        const params = {
             empresa: p.get("id_empresa"),
             jornada: p.get("id_jornada")
         };
+
+        showDebug("📥 Parâmetros recebidos:");
+        showDebug("• id_empresa = " + params.empresa);
+        showDebug("• id_jornada = " + params.jornada);
+
+        return params;
     }
 
-    // 📌 Carrega os dados do Supabase
     async function loadData() {
         const p = getParams();
 
-        showDebug("📥 Parâmetros recebidos:");
-        showDebug("• id_empresa = " + p.empresa);
-        showDebug("• id_jornada = " + p.jornada);
-
         if (!p.empresa || !p.jornada) {
+            showDebug("❌ Parâmetros inválidos.");
             alert("Parâmetros inválidos. Esperado: ?id_empresa=...&id_jornada=...");
             return;
         }
+
+        showDebug("✔️ Parâmetros OK. Iniciando consulta ao Supabase...");
 
         const { data, error } = await supabase
             .from("jornada_trabalho_resposta")
@@ -141,24 +138,33 @@
             .limit(1)
             .maybeSingle();
 
-        if (error || !data) {
-            showDebug("❌ Nenhuma jornada encontrada.");
+        showDebug("📡 Resposta do Supabase:");
+        showDebug(JSON.stringify({ data, error }));
+
+        if (error) {
+            showDebug("❌ Erro na consulta: " + error.message);
+            alert("Erro ao consultar o Supabase.");
+            return;
+        }
+
+        if (!data) {
+            showDebug("⚠️ Nenhuma jornada encontrada.");
             alert("Nenhuma jornada encontrada para estes parâmetros.");
             return;
         }
 
-        showDebug("✅ Dados encontrados no Supabase!");
-        showDebug("🔎 Placa encontrada: " + (data.placa_veiculo || "NÃO ENVIADA"));
-
+        showDebug("✔️ Dados encontrados. Preenchendo HTML...");
         fillFields(data);
     }
 
     function fillFields(d) {
 
-        /* 🔎 Debug da placa */
-        showDebug("📌 Preenchendo placa no HTML: " + (d.placa_veiculo || "NÃO INFORMADA"));
+        // ✅ AQUI: LÓGICA PEDIDA PARA MOSTRAR "placa não encontrada"
+        document.getElementById("placa").textContent =
+            d.placa_veiculo && d.placa_veiculo.trim() !== ""
+                ? d.placa_veiculo
+                : "placa não encontrada";
 
-        document.getElementById("placa").textContent = d.placa_veiculo || "-";
         document.getElementById("modelo").textContent = d.id_veiculo || "-";
         document.getElementById("km").textContent = d.tacografo || "-";
         document.getElementById("rota").textContent = d.localicacao || "-";
@@ -205,7 +211,6 @@
     <img class="logo" src="https://i.imgur.com/f9G8zE7.png" alt="Logo">
 
     <h1>Jornada de Trabalho</h1>
-    <h2 id="titulo"></h2>
 
     <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
 
