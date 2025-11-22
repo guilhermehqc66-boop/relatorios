@@ -148,7 +148,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO
+        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -182,17 +182,20 @@
         }
     }
 
+    // 🧮 CÁLCULO DE KM DO VEÍCULO
     function fillViagem(v) {
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
 
-        // 🆕 Exibir KM inicial e final exatamente como está no banco
-        document.getElementById("kminicio").textContent = v.kminicio ?? "-";
-        document.getElementById("kmfinal").textContent = v.kmfinal ?? "-";
-
-        // 🛑 Não calcular ainda
-        document.getElementById("km").textContent = "-";
+        if (v.kminicio !== null && v.kmfinal !== null) {
+            let totalkm = Number(v.kmfinal) - Number(v.kminicio);
+            totalkm = totalkm < 0 ? 0 : totalkm; // segurança se vier invertido
+            document.getElementById("km").textContent = totalkm + " KM";
+        } else {
+            document.getElementById("km").textContent = "-";
+        }
     }
 
+    // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
     function fillJornadaExtra(j) {
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
     }
@@ -238,12 +241,6 @@
         <div class="cell"><strong>Placa do Veículo:</strong> <span id="placa"></span></div>
         <div class="cell"><strong>Marca/Modelo:</strong> <span id="modelo"></span></div>
         <div class="cell"><strong>KM do Veículo:</strong> <span id="km"></span></div>
-    </div>
-
-    <!-- 🆕 CAMPOS KM INICIAL E FINAL -->
-    <div class="row">
-        <div class="cell"><strong>KM Inicial (viagem):</strong> <span id="kminicio"></span></div>
-        <div class="cell"><strong>KM Final (viagem):</strong> <span id="kmfinal"></span></div>
     </div>
 
     <div class="row">
