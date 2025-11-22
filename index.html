@@ -127,19 +127,14 @@
             if (motorista) { fillMotorista(motorista); showIndicadorMotorista(); }
         }
 
-        // 📌 Buscar VIAGEM + adicionar cálculo KM
+        // 📌 Buscar VIAGEM
         if (jornada.id_viagem) {
             const { data: viagem } = await sb
                 .from("viagens")
                 .select("*")
                 .eq("id", jornada.id_viagem)
                 .maybeSingle();
-
-            if (viagem) { 
-                fillViagem(viagem); 
-                calculateKM(viagem); 
-                showIndicadorViagem(); 
-            }
+            if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
         // 📌 Buscar DESPESAS
@@ -153,7 +148,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO (rota)
+        // 📌 Buscar JORNADA_TRABALHO
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -189,19 +184,17 @@
 
     function fillViagem(v) {
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
+
+        // 🆕 Exibir KM inicial e final exatamente como está no banco
+        document.getElementById("kminicio").textContent = v.kminicio ?? "-";
+        document.getElementById("kmfinal").textContent = v.kmfinal ?? "-";
+
+        // 🛑 Não calcular ainda
+        document.getElementById("km").textContent = "-";
     }
 
-    // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
     function fillJornadaExtra(j) {
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
-    }
-
-    // 🆕 CALCULAR O KM RODADO
-    function calculateKM(v) {
-        if (v.kminicio != null && v.kmfinal != null) {
-            const km = v.kmfinal - v.kminicio;
-            document.getElementById("km").textContent = km > 0 ? `${km} km` : "-";
-        }
     }
 
     function fillDespesas(list) {
@@ -245,6 +238,12 @@
         <div class="cell"><strong>Placa do Veículo:</strong> <span id="placa"></span></div>
         <div class="cell"><strong>Marca/Modelo:</strong> <span id="modelo"></span></div>
         <div class="cell"><strong>KM do Veículo:</strong> <span id="km"></span></div>
+    </div>
+
+    <!-- 🆕 CAMPOS KM INICIAL E FINAL -->
+    <div class="row">
+        <div class="cell"><strong>KM Inicial (viagem):</strong> <span id="kminicio"></span></div>
+        <div class="cell"><strong>KM Final (viagem):</strong> <span id="kmfinal"></span></div>
     </div>
 
     <div class="row">
