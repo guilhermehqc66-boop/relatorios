@@ -63,7 +63,6 @@
         .container { box-shadow: none; width: 100%; }
     }
 
-    /* Indicador */
     #indicador {
         position: fixed;
         top: 10px;
@@ -117,8 +116,7 @@
 
         if (!jornada) return;
 
-        createContainer(jornada_id); 
-
+        const container = createContainer(jornada_id);
         await fillSections(jornada);
     }
 
@@ -150,8 +148,6 @@
             if (jornada_extra) fillJornadaExtra(jornada_extra, prefix);
         }
     }
-
-    /** 🔻 ABDC: IGUAL SEU CÓDIGO ORIGINAL, só com prefixo 🔻 */
 
     function fillJornada(d, p) {
         document.getElementById(p+"placa").textContent = d.placa_veiculo || "-";
@@ -190,7 +186,7 @@
 
     function fillDespesas(list, p) {
         let html = "";
-        list.forEach((d) => {
+        list.forEach(d => {
             html += `<tr>
                 <td>${d.tipo || "-"}</td>
                 <td>${d.total_litros || "-"}</td>
@@ -206,13 +202,19 @@
     function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
     function convertMinutes(min) { if (!min) return "-"; const h = Math.floor(min/60); const m = Math.floor(min%60); return `${h}h ${m}m`; }
 
-    /** 🔧 DUPLICAÇÃO DO HTML */
+    /** 🔧 DUPLICAÇÃO CORRETA */
     function createContainer(id) {
-        const cont = document.querySelector(".container").cloneNode(true);
-        const prefix = "j"+id+"_";
+        const base = document.querySelector(".container");
+        const novo = base.cloneNode(true);
+        const prefix = "j" + id + "_";
 
-        cont.innerHTML = cont.innerHTML.replace(/id="/g, `id="${prefix}`);
-        document.body.appendChild(cont);
+        // Muda IDs apenas dos elementos que precisam de dados
+        novo.querySelectorAll("[id]").forEach(el => {
+            el.id = prefix + el.id;
+        });
+
+        document.body.appendChild(novo);
+        return novo;
     }
 </script>
 </head>
