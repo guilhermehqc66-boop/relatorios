@@ -103,7 +103,7 @@
             return;
         }
 
-        // 📌 Buscar JORNADA_RESPOSTA
+        // 📌 Buscar JORNADA_RESPOSTA (principal)
         const { data: jornada } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -134,7 +134,6 @@
                 .select("*")
                 .eq("id", jornada.id_viagem)
                 .maybeSingle();
-
             if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
@@ -149,7 +148,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO
+        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -183,24 +182,18 @@
         }
     }
 
-    // 📌 AQUI ENTRA O CÁLCULO DO KM FINAL
+    // 🆕 KM Calculado!
     function fillViagem(v) {
-
-        // Cidade (já existia)
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
 
-        // 🆕 CÁLCULO DO KM — totalmente seguro
-        let km = "-";
-
-        if (v.kminicio != null && v.kmfinal != null) {
-            const calc = Number(v.kmfinal) - Number(v.kminicio);
-            km = isNaN(calc) ? "-" : calc;
+        if (v.kminicio != null && v.kmfinal != null && v.kmfinal > v.kminicio) {
+            const diff = Number(v.kmfinal) - Number(v.kminicio);
+            document.getElementById("km").textContent = diff + " km";
+        } else {
+            document.getElementById("km").textContent = "-";
         }
-
-        document.getElementById("km").textContent = km;
     }
 
-    // 🆕 TITULO DA JORNADA_TRABALHO É A ROTA
     function fillJornadaExtra(j) {
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
     }
