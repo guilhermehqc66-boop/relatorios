@@ -123,7 +123,7 @@
             if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
-        // Buscar DESPESAS
+        // Buscar DESPESAS (lista)
         const { data: despesas } = await sb
             .from("despesas")
             .select("*")
@@ -154,6 +154,7 @@
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
     }
 
+    // 🔁 LISTAGEM DE DESPESAS (MULTILINHAS)
     function fillDespesas(list) {
         let html = "";
         list.forEach((d) => {
