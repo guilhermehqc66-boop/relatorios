@@ -103,7 +103,7 @@
             return;
         }
 
-        // 📌 Buscar JORNADA_RESPOSTA (principal)
+        // 📌 Buscar JORNADA_RESPOSTA
         const { data: jornada } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -134,6 +134,7 @@
                 .select("*")
                 .eq("id", jornada.id_viagem)
                 .maybeSingle();
+
             if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
@@ -148,7 +149,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
+        // 📌 Buscar JORNADA_TRABALHO
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -161,10 +162,10 @@
     }
 
     function fillJornada(d) {
-        document.getElementById("placa").textContent = d.placa_veiculo || "-"; // 🆕 AGORA PUXA DA JORNADA RESPOSTA
+        document.getElementById("placa").textContent = d.placa_veiculo || "-";
         document.getElementById("modelo").textContent = "-";
         document.getElementById("km").textContent = "-";
-        document.getElementById("rota").textContent = ""; // será preenchido pela jornada_trabalho
+        document.getElementById("rota").textContent = "";
         document.getElementById("cidade").textContent = "-";
         document.getElementById("data").textContent = formatDate(d.created_at);
         document.getElementById("motorista").textContent = d.nome || "-";
@@ -182,11 +183,24 @@
         }
     }
 
+    // 📌 AQUI ENTRA O CÁLCULO DO KM FINAL
     function fillViagem(v) {
+
+        // Cidade (já existia)
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
+
+        // 🆕 CÁLCULO DO KM — totalmente seguro
+        let km = "-";
+
+        if (v.kminicio != null && v.kmfinal != null) {
+            const calc = Number(v.kmfinal) - Number(v.kminicio);
+            km = isNaN(calc) ? "-" : calc;
+        }
+
+        document.getElementById("km").textContent = km;
     }
 
-    // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
+    // 🆕 TITULO DA JORNADA_TRABALHO É A ROTA
     function fillJornadaExtra(j) {
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
     }
