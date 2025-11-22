@@ -13,27 +13,40 @@
         margin: 0;
         padding: 20px;
     }
+
     .container {
         width: 95%;
         max-width: 900px;
         margin: 40px auto;
         background: white;
-        padding: 20px 25px;
+        padding: 0 0 20px 0;
         border-radius: 8px;
         box-shadow: 0 0 10px #00000015;
         page-break-after: always;
+        overflow: hidden;
     }
-    .logo {
-        width: 150px;
-        display: block;
-        margin: 10px auto 20px auto;
+
+    /* CABEÇALHO VERDE */
+    .header {
+        background: #006400; /* verde escuro */
+        padding: 25px 10px;
+        text-align: center;
     }
+
+    .header img {
+        width: 210px;
+    }
+
     h1 {
-        font-size: 26px;
-        margin-bottom: 10px;
-        text-align: left;
+        font-size: 24px;
+        margin: 20px 0 10px 20px;
         font-weight: 700;
     }
+
+    .section {
+        padding: 0 25px;
+    }
+
     .section-title {
         background: #d9d9d9;
         padding: 6px 10px;
@@ -41,6 +54,7 @@
         margin-top: 20px;
         border-radius: 4px;
     }
+
     .row { display: flex; width: 100%; margin-bottom: 4px; }
     .cell {
         border: 1px solid #cccccc;
@@ -48,6 +62,7 @@
         font-size: 14px;
         flex: 1;
     }
+
     table {
         width: 100%;
         border-collapse: collapse;
@@ -59,6 +74,13 @@
         font-size: 13px;
         text-align: center;
     }
+
+    .assinatura {
+        width: 200px;
+        margin: 10px;
+        border: 1px solid #ccc;
+    }
+
     @media print {
         body { background: white; }
         .container { box-shadow: none; width: 100%; }
@@ -94,7 +116,6 @@
 
     async function loadSingleJornada(idEmpresa, idJornada) {
 
-        // Buscar jornada principal
         const { data: jornada } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -104,16 +125,13 @@
 
         if (!jornada) return;
 
-        // Criar container novo
         const container = document.createElement("div");
         container.className = "container";
-        container.innerHTML = templateHTML(); 
+        container.innerHTML = templateHTML();
         document.body.appendChild(container);
 
-        // Agora preenche os dados dentro desse container
         fillJornada(container, jornada);
 
-        // Motorista
         if (jornada.id_motorista) {
             const { data: motorista } = await sb
                 .from("usuarios_empresa")
@@ -124,7 +142,6 @@
             if (motorista) fillMotorista(container, motorista);
         }
 
-        // Viagem
         if (jornada.id_viagem) {
             const { data: viagem } = await sb
                 .from("viagens")
@@ -134,7 +151,6 @@
             if (viagem) fillViagem(container, viagem);
         }
 
-        // Despesas
         const { data: despesas } = await sb
             .from("despesas")
             .select("*")
@@ -142,7 +158,6 @@
 
         if (despesas?.length > 0) fillDespesas(container, despesas);
 
-        // Jornada extra
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -153,56 +168,62 @@
         }
     }
 
-    // Template de repetição
     function templateHTML() {
         return `
-            <img class="logo" src="https://i.imgur.com/f9G8zE7.png" alt="Logo">
+            <div class="header">
+                <img src="https://qivhnebuhdponvtplram.supabase.co/storage/v1/object/public/imagens/logos/logo%20ind.png">
+            </div>
+
             <h1>Jornada de Trabalho</h1>
 
-            <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
-            <div class="row">
-                <div class="cell"><strong>Placa do Veículo:</strong> <span class="placa"></span></div>
-                <div class="cell"><strong>Marca/Modelo:</strong> <span class="modelo"></span></div>
-                <div class="cell"><strong>KM do Veículo:</strong> <span class="km"></span></div>
+            <div class="section">
+
+                <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
+                <div class="row">
+                    <div class="cell"><strong>Placa do Veículo:</strong> <span class="placa"></span></div>
+                    <div class="cell"><strong>Marca/Modelo:</strong> <span class="modelo"></span></div>
+                    <div class="cell"><strong>KM do Veículo:</strong> <span class="km"></span></div>
+                </div>
+
+                <div class="row">
+                    <div class="cell"><strong>Rota:</strong> <span class="rota"></span></div>
+                    <div class="cell"><strong>Cidade:</strong> <span class="cidade"></span></div>
+                    <div class="cell"><strong>Data:</strong> <span class="data"></span></div>
+                </div>
+
+                <div class="row">
+                    <div class="cell"><strong>Motorista:</strong> <span class="motorista"></span></div>
+                </div>
+
+                <div class="section-title">2 - DADOS DE HORAS</div>
+                <div class="row">
+                    <div class="cell"><strong>Início Jornada:</strong> <span class="inicio"></span></div>
+                    <div class="cell"><strong>Fim Jornada:</strong> <span class="fim"></span></div>
+                    <div class="cell"><strong>Horas Trabalhadas:</strong> <span class="horas"></span></div>
+                </div>
+
+                <div class="row">
+                    <div class="cell"><strong>Cliente:</strong> <span class="cliente"></span></div>
+                </div>
+
+                <div class="section-title">3 - DADOS DESPESAS</div>
+                <table class="tabela-despesas">
+                    <thead>
+                        <tr>
+                            <th>Categorias</th>
+                            <th>Litros</th>
+                            <th>Valor Litros</th>
+                            <th>Valor Total</th>
+                            <th>Local</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <div class="section-title">4 - ASSINATURA</div>
+                <img class="assinatura" src="" alt="Assinatura">
+
             </div>
-
-            <div class="row">
-                <div class="cell"><strong>Rota:</strong> <span class="rota"></span></div>
-                <div class="cell"><strong>Cidade:</strong> <span class="cidade"></span></div>
-                <div class="cell"><strong>Data:</strong> <span class="data"></span></div>
-            </div>
-
-            <div class="row">
-                <div class="cell"><strong>Motorista:</strong> <span class="motorista"></span></div>
-            </div>
-
-            <div class="section-title">2 - DADOS DE HORAS</div>
-            <div class="row">
-                <div class="cell"><strong>Início Jornada:</strong> <span class="inicio"></span></div>
-                <div class="cell"><strong>Fim Jornada:</strong> <span class="fim"></span></div>
-                <div class="cell"><strong>Horas Trabalhadas:</strong> <span class="horas"></span></div>
-            </div>
-
-            <div class="row">
-                <div class="cell"><strong>Cliente:</strong> <span class="cliente"></span></div>
-            </div>
-
-            <div class="section-title">3 - DADOS DESPESAS</div>
-            <table class="tabela-despesas">
-                <thead>
-                    <tr>
-                        <th>Categorias</th>
-                        <th>Litros</th>
-                        <th>Valor Litros</th>
-                        <th>Valor Total</th>
-                        <th>Local</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-
-            <div class="section-title">4 - ASSINATURA</div>
-            <img class="assinatura" src="" alt="Assinatura">
         `;
     }
 
@@ -230,8 +251,10 @@
 
     function fillViagem(c, v) {
         if (v.destino) c.querySelector(".cidade").textContent = v.destino;
+
         if (v.kminicio !== null && v.kmfinal !== null) {
             let totalkm = Number(v.kmfinal) - Number(v.kminicio);
+            if (totalkm < 0) totalkm = 0;
             c.querySelector(".km").textContent = totalkm + " KM";
         }
     }
@@ -243,23 +266,30 @@
     function fillDespesas(c, list) {
         let html = "";
         list.forEach((d) => {
-            html += `<tr>
-                <td>${d.tipo || "-"}</td>
-                <td>${d.total_litros || "-"}</td>
-                <td>${d.valor_litro || "-"}</td>
-                <td>${d.valor_total || "-"}</td>
-                <td>${d.local || "-"}</td>
-            </tr>`;
+            html += `
+                <tr>
+                    <td>${d.tipo || "-"}</td>
+                    <td>${d.total_litros || "-"}</td>
+                    <td>${d.valor_litro || "-"}</td>
+                    <td>${d.valor_total || "-"}</td>
+                    <td>${d.local || "-"}</td>
+                </tr>`;
         });
         c.querySelector(".tabela-despesas tbody").innerHTML = html;
     }
 
-    function formatDate(date) { return date ? new Date(date).toLocaleDateString("pt-BR") : "-"; }
-    function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
+    function formatDate(date) {
+        return date ? new Date(date).toLocaleDateString("pt-BR") : "-";
+    }
+
+    function formatDateTime(date) {
+        return date ? new Date(date).toLocaleString("pt-BR") : "-";
+    }
+
     function convertMinutes(min) {
-        if (!min) return "-"; 
-        const h = Math.floor(min / 60); 
-        const m = Math.floor(min % 60); 
+        if (!min) return "-";
+        const h = Math.floor(min / 60);
+        const m = Math.floor(min % 60);
         return `${h}h ${m}m`;
     }
 </script>
