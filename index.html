@@ -19,32 +19,31 @@
         max-width: 900px;
         margin: 40px auto;
         background: white;
-        padding: 0 0 20px 0;
+        padding: 0 25px 20px 25px; 
         border-radius: 8px;
         box-shadow: 0 0 10px #00000015;
         page-break-after: always;
-        overflow: hidden;
     }
 
-    /* CABEÇALHO VERDE */
+    /* Cabeçalho verde com logo */
     .header {
-        background: #006400; /* verde escuro */
-        padding: 25px 10px;
+        width: 100%;
+        background: #0ca342;
+        padding: 20px 0;
         text-align: center;
+        border-radius: 8px 8px 0 0;
+        margin: 0 -25px 20px -25px;
     }
 
     .header img {
-        width: 210px;
+        width: 180px;
     }
 
     h1 {
-        font-size: 24px;
-        margin: 20px 0 10px 20px;
+        font-size: 26px;
+        margin-bottom: 10px;
+        text-align: left;
         font-weight: 700;
-    }
-
-    .section {
-        padding: 0 25px;
     }
 
     .section-title {
@@ -68,6 +67,7 @@
         border-collapse: collapse;
         margin-top: 5px;
     }
+
     table th, table td {
         border: 1px solid #ccc;
         padding: 6px;
@@ -76,9 +76,8 @@
     }
 
     .assinatura {
-        width: 200px;
-        margin: 10px;
-        border: 1px solid #ccc;
+        width: 160px;
+        margin-top: 10px;
     }
 
     @media print {
@@ -109,9 +108,15 @@
             return;
         }
 
+        // Carregar jornadas uma por uma
         for (let id of p.jornadas) {
             await loadSingleJornada(p.empresa, id);
         }
+
+        // Aguarda o DOM atualizar e imprime automaticamente
+        setTimeout(() => {
+            window.print();
+        }, 800);
     }
 
     async function loadSingleJornada(idEmpresa, idJornada) {
@@ -127,7 +132,7 @@
 
         const container = document.createElement("div");
         container.className = "container";
-        container.innerHTML = templateHTML();
+        container.innerHTML = templateHTML(); 
         document.body.appendChild(container);
 
         fillJornada(container, jornada);
@@ -176,54 +181,50 @@
 
             <h1>Jornada de Trabalho</h1>
 
-            <div class="section">
-
-                <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
-                <div class="row">
-                    <div class="cell"><strong>Placa do Veículo:</strong> <span class="placa"></span></div>
-                    <div class="cell"><strong>Marca/Modelo:</strong> <span class="modelo"></span></div>
-                    <div class="cell"><strong>KM do Veículo:</strong> <span class="km"></span></div>
-                </div>
-
-                <div class="row">
-                    <div class="cell"><strong>Rota:</strong> <span class="rota"></span></div>
-                    <div class="cell"><strong>Cidade:</strong> <span class="cidade"></span></div>
-                    <div class="cell"><strong>Data:</strong> <span class="data"></span></div>
-                </div>
-
-                <div class="row">
-                    <div class="cell"><strong>Motorista:</strong> <span class="motorista"></span></div>
-                </div>
-
-                <div class="section-title">2 - DADOS DE HORAS</div>
-                <div class="row">
-                    <div class="cell"><strong>Início Jornada:</strong> <span class="inicio"></span></div>
-                    <div class="cell"><strong>Fim Jornada:</strong> <span class="fim"></span></div>
-                    <div class="cell"><strong>Horas Trabalhadas:</strong> <span class="horas"></span></div>
-                </div>
-
-                <div class="row">
-                    <div class="cell"><strong>Cliente:</strong> <span class="cliente"></span></div>
-                </div>
-
-                <div class="section-title">3 - DADOS DESPESAS</div>
-                <table class="tabela-despesas">
-                    <thead>
-                        <tr>
-                            <th>Categorias</th>
-                            <th>Litros</th>
-                            <th>Valor Litros</th>
-                            <th>Valor Total</th>
-                            <th>Local</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-
-                <div class="section-title">4 - ASSINATURA</div>
-                <img class="assinatura" src="" alt="Assinatura">
-
+            <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
+            <div class="row">
+                <div class="cell"><strong>Placa do Veículo:</strong> <span class="placa"></span></div>
+                <div class="cell"><strong>Marca/Modelo:</strong> <span class="modelo"></span></div>
+                <div class="cell"><strong>KM do Veículo:</strong> <span class="km"></span></div>
             </div>
+
+            <div class="row">
+                <div class="cell"><strong>Rota:</strong> <span class="rota"></span></div>
+                <div class="cell"><strong>Cidade:</strong> <span class="cidade"></span></div>
+                <div class="cell"><strong>Data:</strong> <span class="data"></span></div>
+            </div>
+
+            <div class="row">
+                <div class="cell"><strong>Motorista:</strong> <span class="motorista"></span></div>
+            </div>
+
+            <div class="section-title">2 - DADOS DE HORAS</div>
+            <div class="row">
+                <div class="cell"><strong>Início Jornada:</strong> <span class="inicio"></span></div>
+                <div class="cell"><strong>Fim Jornada:</strong> <span class="fim"></span></div>
+                <div class="cell"><strong>Horas Trabalhadas:</strong> <span class="horas"></span></div>
+            </div>
+
+            <div class="row">
+                <div class="cell"><strong>Cliente:</strong> <span class="cliente"></span></div>
+            </div>
+
+            <div class="section-title">3 - DADOS DESPESAS</div>
+            <table class="tabela-despesas">
+                <thead>
+                    <tr>
+                        <th>Categorias</th>
+                        <th>Litros</th>
+                        <th>Valor Litros</th>
+                        <th>Valor Total</th>
+                        <th>Local</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="section-title">4 - ASSINATURA</div>
+            <img class="assinatura" src="" alt="Assinatura">
         `;
     }
 
@@ -251,10 +252,8 @@
 
     function fillViagem(c, v) {
         if (v.destino) c.querySelector(".cidade").textContent = v.destino;
-
         if (v.kminicio !== null && v.kmfinal !== null) {
             let totalkm = Number(v.kmfinal) - Number(v.kminicio);
-            if (totalkm < 0) totalkm = 0;
             c.querySelector(".km").textContent = totalkm + " KM";
         }
     }
@@ -266,30 +265,23 @@
     function fillDespesas(c, list) {
         let html = "";
         list.forEach((d) => {
-            html += `
-                <tr>
-                    <td>${d.tipo || "-"}</td>
-                    <td>${d.total_litros || "-"}</td>
-                    <td>${d.valor_litro || "-"}</td>
-                    <td>${d.valor_total || "-"}</td>
-                    <td>${d.local || "-"}</td>
-                </tr>`;
+            html += `<tr>
+                <td>${d.tipo || "-"}</td>
+                <td>${d.total_litros || "-"}</td>
+                <td>${d.valor_litro || "-"}</td>
+                <td>${d.valor_total || "-"}</td>
+                <td>${d.local || "-"}</td>
+            </tr>`;
         });
         c.querySelector(".tabela-despesas tbody").innerHTML = html;
     }
 
-    function formatDate(date) {
-        return date ? new Date(date).toLocaleDateString("pt-BR") : "-";
-    }
-
-    function formatDateTime(date) {
-        return date ? new Date(date).toLocaleString("pt-BR") : "-";
-    }
-
+    function formatDate(date) { return date ? new Date(date).toLocaleDateString("pt-BR") : "-"; }
+    function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
     function convertMinutes(min) {
-        if (!min) return "-";
-        const h = Math.floor(min / 60);
-        const m = Math.floor(min % 60);
+        if (!min) return "-"; 
+        const h = Math.floor(min / 60); 
+        const m = Math.floor(min % 60); 
         return `${h}h ${m}m`;
     }
 </script>
