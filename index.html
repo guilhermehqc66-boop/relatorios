@@ -47,7 +47,7 @@
         font-size: 14px;
         flex: 1;
     }
-    #indicador-viagem, #indicador-despesa, #indicador-motorista {
+    #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada-base {
         background: green;
         color: white;
         padding: 6px 10px;
@@ -59,6 +59,7 @@
     #indicador-viagem { background: #0075ff; }
     #indicador-despesa { background: #3ca83c; }
     #indicador-motorista { background: #c96e00; }
+    #indicador-jornada-base { background: #8a008a; }
 
     table {
         width: 100%;
@@ -72,7 +73,7 @@
         text-align: center;
     }
     @media print {
-        #indicador-viagem, #indicador-despesa, #indicador-motorista { display: none; }
+        #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada-base { display: none; }
         body { background: white; }
         .container { box-shadow: none; width: 100%; }
     }
@@ -85,15 +86,10 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdmhuZWJ1aGRwb252dHBscmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4NTYzMjQsImV4cCI6MjA0OTQzMjMyNH0.2Dmp8BvqWgcUmMg9StRoAdbEvAUrm4yvW8jgc4J-F1M";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function showIndicadorViagem() {
-        document.getElementById("indicador-viagem").style.display = "inline-block";
-    }
-    function showIndicadorDespesa() {
-        document.getElementById("indicador-despesa").style.display = "inline-block";
-    }
-    function showIndicadorMotorista() {
-        document.getElementById("indicador-motorista").style.display = "inline-block";
-    }
+    function showIndicadorViagem() { document.getElementById("indicador-viagem").style.display = "inline-block"; }
+    function showIndicadorDespesa() { document.getElementById("indicador-despesa").style.display = "inline-block"; }
+    function showIndicadorMotorista() { document.getElementById("indicador-motorista").style.display = "inline-block"; }
+    function showIndicadorBase() { document.getElementById("indicador-jornada-base").style.display = "inline-block"; }
 
     function getParams() {
         const p = new URLSearchParams(window.location.search);
@@ -107,7 +103,7 @@
             return;
         }
 
-        // 📌 Buscar JORNADA
+        // 📌 Buscar JORNADA RESPOSTA
         const { data: jornada } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -119,7 +115,17 @@
         if (!jornada) return alert("Jornada não encontrada.");
         fillJornada(jornada);
 
-        // 📌 Buscar MOTORISTA (usuarios_empresa)
+        // 🆕 📌 Buscar JORNADA BASE (jornada_trabalho)
+        if (jornada.id_jornada_trabalho) {
+            const { data: jornadaBase } = await sb
+                .from("jornada_trabalho")
+                .select("*")
+                .eq("id", jornada.id_jornada_trabalho)
+                .maybeSingle();
+            if (jornadaBase) { showIndicadorBase(); }
+        }
+
+        // 📌 Buscar MOTORISTA
         if (jornada.id_motorista) {
             const { data: motorista } = await sb
                 .from("usuarios_empresa")
@@ -168,7 +174,6 @@
         document.getElementById("assinatura").src = d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
     }
 
-    // 🆕 Preencher dados do motorista via tabela usuarios_empresa
     function fillMotorista(m) {
         if (m.nome) document.getElementById("motorista").textContent = m.nome;
         if (m.assinatura_digital && m.assinatura_digital !== "-") {
@@ -210,6 +215,7 @@
 
     <h1>Jornada de Trabalho</h1>
 
+    <div id="indicador-jornada-base">📎 Dados da tabela JORNADA_TRABALHO foram carregados</div>
     <div id="indicador-motorista">👨‍✈️ Dados da tabela USUÁRIOS_EMPRESA foram carregados</div>
     <div id="indicador-viagem">🚚 Dados da tabela VIAGENS foram carregados</div>
     <div id="indicador-despesa">💰 Dados da tabela DESPESAS foram carregados</div>
