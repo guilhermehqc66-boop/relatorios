@@ -21,6 +21,10 @@
         padding: 20px 25px;
         border-radius: 8px;
         box-shadow: 0 0 10px #00000015;
+        page-break-after: always;
+    }
+    .container:last-child {
+        page-break-after: auto;
     }
     .logo {
         width: 150px;
@@ -30,7 +34,6 @@
     h1 {
         font-size: 26px;
         margin-bottom: 10px;
-        text-align: left;
         font-weight: 700;
     }
     .section-title {
@@ -47,11 +50,7 @@
         font-size: 14px;
         flex: 1;
     }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 5px;
-    }
+    table { width: 100%; border-collapse: collapse; margin-top: 5px; }
     table th, table td {
         border: 1px solid #ccc;
         padding: 6px;
@@ -71,112 +70,111 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFpdmhuZWJ1aGRwb252dHBscmFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM4NTYzMjQsImV4cCI6MjA0OTQzMjMyNH0.2Dmp8BvqWgcUmMg9StRoAdbEvAUrm4yvW8jgc4J-F1M";
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ❌ Removidas as funções de indicador 👇
-
     function getParams() {
         const p = new URLSearchParams(window.location.search);
-        return { empresa: p.get("id_empresa"), jornada: p.get("id_jornada") };
+        return {
+            empresa: p.get("id_empresa"),
+            jornadas: p.get("id_jornada")?.split(",") || []
+        };
     }
 
     async function loadData() {
         const p = getParams();
-        if (!p.empresa || !p.jornada) {
-            alert("Parâmetros inválidos. Esperado: ?id_empresa=...&id_jornada=...");
+        if (!p.empresa || p.jornadas.length === 0) {
+            alert("Parâmetros inválidos. Exemplo: ?id_empresa=10&id_jornada=123,124");
             return;
         }
 
-        // 📌 Buscar JORNADA_RESPOSTA (principal)
-        const { data: jornada } = await sb
-            .from("jornada_trabalho_resposta")
-            .select("*")
-            .eq("id_empresa", p.empresa)
-            .eq("id", p.jornada)
-            .limit(1)
-            .maybeSingle();
+        const containerTemplate = document.querySelector(".container").outerHTML;
+        document.body.innerHTML = ""; // Limpa para preencher múltiplos
 
-        if (!jornada) return alert("Jornada não encontrada.");
-        fillJornada(jornada);
-
-        // 📌 Buscar USUÁRIO/MOTORISTA
-        if (jornada.id_motorista) {
-            const { data: motorista } = await sb
-                .from("usuarios_empresa")
+        for (const jornadaId of p.jornadas) {
+            const { data: jornada } = await sb
+                .from("jornada_trabalho_resposta")
                 .select("*")
-                .eq("empresa", p.empresa)
-                .eq("id", jornada.id_motorista)
+                .eq("id_empresa", p.empresa)
+                .eq("id", jornadaId)
                 .maybeSingle();
-            if (motorista) fillMotorista(motorista);
-        }
 
-        // 📌 Buscar VIAGEM
-        if (jornada.id_viagem) {
-            const { data: viagem } = await sb
-                .from("viagens")
+            if (!jornada) continue;
+
+            const newBlock = document.createElement("div");
+            newBlock.innerHTML = containerTemplate;
+            document.body.appendChild(newBlock.firstElementChild);
+
+            fillJornada(newBlock, jornada);
+
+            if (jornada.id_motorista) {
+                const { data: motorista } = await sb
+                    .from("usuarios_empresa")
+                    .select("*")
+                    .eq("empresa", p.empresa)
+                    .eq("id", jornada.id_motorista)
+                    .maybeSingle();
+                if (motorista) fillMotorista(newBlock, motorista);
+            }
+
+            if (jornada.id_viagem) {
+                const { data: viagem } = await sb
+                    .from("viagens")
+                    .select("*")
+                    .eq("id", jornada.id_viagem)
+                    .maybeSingle();
+                if (viagem) fillViagem(newBlock, viagem);
+            }
+
+            const { data: despesas } = await sb
+                .from("despesas")
                 .select("*")
-                .eq("id", jornada.id_viagem)
-                .maybeSingle();
-            if (viagem) fillViagem(viagem);
-        }
+                .eq("id_jornada_resposta", jornada.id);
+            if (despesas?.length) fillDespesas(newBlock, despesas);
 
-        // 📌 Buscar DESPESAS
-        const { data: despesas } = await sb
-            .from("despesas")
-            .select("*")
-            .eq("id_jornada_resposta", jornada.id);
-
-        if (despesas && despesas.length > 0) fillDespesas(despesas);
-
-        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
-        if (jornada.id_jornada_trabalho) {
-            const { data: jornada_extra } = await sb
-                .from("jornada_trabalho")
-                .select("*")
-                .eq("id", jornada.id_jornada_trabalho)
-                .maybeSingle();
-            if (jornada_extra) fillJornadaExtra(jornada_extra);
+            if (jornada.id_jornada_trabalho) {
+                const { data: jornada_extra } = await sb
+                    .from("jornada_trabalho")
+                    .select("*")
+                    .eq("id", jornada.id_jornada_trabalho)
+                    .maybeSingle();
+                if (jornada_extra) fillJornadaExtra(newBlock, jornada_extra);
+            }
         }
     }
 
-    function fillJornada(d) {
-        document.getElementById("placa").textContent = d.placa_veiculo || "-";
-        document.getElementById("modelo").textContent = "-";
-        document.getElementById("km").textContent = "-";
-        document.getElementById("rota").textContent = "";
-        document.getElementById("cidade").textContent = "-";
-        document.getElementById("data").textContent = formatDate(d.created_at);
-        document.getElementById("motorista").textContent = d.nome || "-";
-        document.getElementById("inicio").textContent = formatDateTime(d.inicio_data);
-        document.getElementById("fim").textContent = formatDateTime(d.fim_data);
-        document.getElementById("horas").textContent = convertMinutes(d.total_minutos);
-        document.getElementById("cliente").textContent = d.cliente || "-";
-        document.getElementById("assinatura").src = d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
+    function fillJornada(root, d) {
+        root.querySelector("#placa").textContent = d.placa_veiculo || "-";
+        root.querySelector("#modelo").textContent = "-";
+        root.querySelector("#km").textContent = "-";
+        root.querySelector("#rota").textContent = "";
+        root.querySelector("#cidade").textContent = "-";
+        root.querySelector("#data").textContent = formatDate(d.created_at);
+        root.querySelector("#motorista").textContent = d.nome || "-";
+        root.querySelector("#inicio").textContent = formatDateTime(d.inicio_data);
+        root.querySelector("#fim").textContent = formatDateTime(d.fim_data);
+        root.querySelector("#horas").textContent = convertMinutes(d.total_minutos);
+        root.querySelector("#cliente").textContent = d.cliente || "-";
+        root.querySelector("#assinatura").src = d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
     }
 
-    function fillMotorista(m) {
-        if (m.nome) document.getElementById("motorista").textContent = m.nome;
+    function fillMotorista(root, m) {
+        if (m.nome) root.querySelector("#motorista").textContent = m.nome;
         if (m.assinatura_digital && m.assinatura_digital !== "-") {
-            document.getElementById("assinatura").src = m.assinatura_digital;
+            root.querySelector("#assinatura").src = m.assinatura_digital;
         }
     }
 
-    // 🧮 CÁLCULO DE KM DO VEÍCULO
-    function fillViagem(v) {
-        if (v.destino) document.getElementById("cidade").textContent = v.destino;
-
-        if (v.kminicio !== null && v.kmfinal !== null) {
+    function fillViagem(root, v) {
+        if (v.destino) root.querySelector("#cidade").textContent = v.destino;
+        if (v.kminicio && v.kmfinal) {
             let totalkm = Number(v.kmfinal) - Number(v.kminicio);
-            totalkm = totalkm < 0 ? 0 : totalkm;
-            document.getElementById("km").textContent = totalkm + " KM";
-        } else {
-            document.getElementById("km").textContent = "-";
+            root.querySelector("#km").textContent = (totalkm < 0 ? 0 : totalkm) + " KM";
         }
     }
 
-    function fillJornadaExtra(j) {
-        if (j.titulo) document.getElementById("rota").textContent = j.titulo;
+    function fillJornadaExtra(root, j) {
+        if (j.titulo) root.querySelector("#rota").textContent = j.titulo;
     }
 
-    function fillDespesas(list) {
+    function fillDespesas(root, list) {
         let html = "";
         list.forEach((d) => {
             html += `<tr>
@@ -187,14 +185,13 @@
                 <td>${d.local || "-"}</td>
             </tr>`;
         });
-        document.querySelector("#tabela-despesas tbody").innerHTML = html;
+        root.querySelector("#tabela-despesas tbody").innerHTML = html;
     }
 
-    function formatDate(date) { return date ? new Date(date).toLocaleDateString("pt-BR") : "-"; }
-    function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
-    function convertMinutes(min) {
-        if (!min) return "-"; const h = Math.floor(min / 60); const m = Math.floor(min % 60); return `${h}h ${m}m`;
-    }
+    const formatDate = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "-";
+    const formatDateTime = (date) => date ? new Date(date).toLocaleString("pt-BR") : "-";
+    const convertMinutes = (min) => !min ? "-" : `${Math.floor(min / 60)}h ${Math.floor(min % 60)}m`;
+
 </script>
 </head>
 
