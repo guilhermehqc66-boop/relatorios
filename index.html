@@ -16,50 +16,22 @@
     .container {
         width: 95%;
         max-width: 900px;
-        margin: auto;
+        margin: 15px auto;
         background: white;
         padding: 20px 25px;
         border-radius: 8px;
         box-shadow: 0 0 10px #00000015;
-        page-break-after: always;
     }
-    .container:last-child {
-        page-break-after: auto;
-    }
-    .logo {
-        width: 150px;
-        display: block;
-        margin: 10px auto 20px auto;
-    }
-    h1 {
-        font-size: 26px;
-        margin-bottom: 10px;
-        font-weight: 700;
-    }
-    .section-title {
-        background: #d9d9d9;
-        padding: 6px 10px;
-        font-weight: bold;
-        margin-top: 20px;
-        border-radius: 4px;
-    }
+    .logo { width: 150px; display: block; margin: 10px auto 20px auto; }
+    h1 { font-size: 26px; margin-bottom: 10px; font-weight: 700; }
+    .section-title { background: #d9d9d9; padding: 6px 10px; font-weight: bold; margin-top: 20px; border-radius: 4px; }
     .row { display: flex; width: 100%; margin-bottom: 4px; }
-    .cell {
-        border: 1px solid #cccccc;
-        padding: 6px 8px;
-        font-size: 14px;
-        flex: 1;
-    }
+    .cell { border: 1px solid #cccccc; padding: 6px 8px; font-size: 14px; flex: 1; }
     table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-    table th, table td {
-        border: 1px solid #ccc;
-        padding: 6px;
-        font-size: 13px;
-        text-align: center;
-    }
+    table th, table td { border: 1px solid #ccc; padding: 6px; font-size: 13px; text-align: center; }
     @media print {
         body { background: white; }
-        .container { box-shadow: none; width: 100%; }
+        .container { box-shadow: none; width: 100%; margin: 0; }
     }
 </style>
 
@@ -85,8 +57,8 @@
             return;
         }
 
-        const containerTemplate = document.querySelector(".container").outerHTML;
-        document.body.innerHTML = ""; // Limpa para preencher múltiplos
+        const template = document.querySelector(".container").outerHTML;
+        document.body.innerHTML = ""; // limpar
 
         for (const jornadaId of p.jornadas) {
             const { data: jornada } = await sb
@@ -99,7 +71,7 @@
             if (!jornada) continue;
 
             const newBlock = document.createElement("div");
-            newBlock.innerHTML = containerTemplate;
+            newBlock.innerHTML = template;
             document.body.appendChild(newBlock.firstElementChild);
 
             fillJornada(newBlock, jornada);
@@ -191,7 +163,6 @@
     const formatDate = (date) => date ? new Date(date).toLocaleDateString("pt-BR") : "-";
     const formatDateTime = (date) => date ? new Date(date).toLocaleString("pt-BR") : "-";
     const convertMinutes = (min) => !min ? "-" : `${Math.floor(min / 60)}h ${Math.floor(min % 60)}m`;
-
 </script>
 </head>
 
