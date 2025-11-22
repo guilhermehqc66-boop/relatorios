@@ -1,22 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jornada de Trabalho</title>
 
 <style>
-    body { font-family: Arial, sans-serif; background: #f2f2f2; margin: 0; padding: 20px; }
-    .container { width: 95%; max-width: 900px; margin: 30px auto; background: #fff; padding: 20px 25px; border-radius: 8px; box-shadow: 0 0 10px #00000015; }
-    .logo { width: 150px; display: block; margin: 10px auto 20px auto; }
-    h1 { font-size: 26px; margin-bottom: 10px; text-align: left; font-weight: 700; }
-    .section-title { background: #d9d9d9; padding: 6px 10px; font-weight: bold; margin-top: 20px; border-radius: 4px; }
+    body {
+        font-family: Arial, sans-serif;
+        background: #f2f2f2;
+        margin: 0;
+        padding: 20px;
+    }
+    .container {
+        width: 95%;
+        max-width: 900px;
+        margin: 20px auto;
+        background: white;
+        padding: 20px 25px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px #00000015;
+    }
+    .logo {
+        width: 150px;
+        display: block;
+        margin: 10px auto 20px auto;
+    }
+    h1 {
+        font-size: 26px;
+        margin-bottom: 10px;
+        text-align: left;
+        font-weight: 700;
+    }
+    .section-title {
+        background: #d9d9d9;
+        padding: 6px 10px;
+        font-weight: bold;
+        margin-top: 20px;
+        border-radius: 4px;
+    }
     .row { display: flex; width: 100%; margin-bottom: 4px; }
-    .cell { border: 1px solid #ccc; padding: 6px 8px; font-size: 14px; flex: 1; }
-    table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-    table th, table td { border: 1px solid #ccc; padding: 6px; font-size: 13px; text-align: center; }
-    #assinatura { width: 200px; height: auto; margin-top: 10px; }
-    @media print { body{ background:#fff; } .container{ box-shadow:none;width:100%;margin:0; } hr{display:none;} }
+    .cell {
+        border: 1px solid #cccccc;
+        padding: 6px 8px;
+        font-size: 14px;
+        flex: 1;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 5px;
+    }
+    table th, table td {
+        border: 1px solid #ccc;
+        padding: 6px;
+        font-size: 13px;
+        text-align: center;
+    }
+    @media print {
+        body { background: white; }
+        .container { box-shadow: none; width: 100%; }
+    }
+
+    /* Indicador */
+    #indicador {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: black;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+    }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -29,96 +86,109 @@
     function getParams() {
         const p = new URLSearchParams(window.location.search);
         return { 
-            empresa: p.get("id_empresa"),
-            jornadas: p.get("id_jornada") 
-                ? p.get("id_jornada").split(",").map(Number).filter(n => !isNaN(n))
-                : []
+            empresa: p.get("id_empresa"), 
+            jornadas: p.get("id_jornada") ? p.get("id_jornada").split(",") : [] 
         };
     }
 
     async function loadData() {
         const p = getParams();
         if (!p.empresa || p.jornadas.length === 0) {
-            alert("Parâmetros inválidos. Use: ?id_empresa=...&id_jornada=1,2,3");
+            alert("Parâmetros inválidos. Exemplo correto:\n?id_empresa=10&id_jornada=123,456");
             return;
         }
 
-        const { data: jornadas } = await sb
-            .from("jornada_trabalho_resposta")
-            .select("*")
-            .eq("id_empresa", p.empresa)
-            .in("id", p.jornadas);
+        document.getElementById("indicador").textContent = "Carregando...";
 
-        if (!jornadas || jornadas.length === 0) {
-            alert("Nenhuma jornada encontrada.");
-            return;
+        for (let jid of p.jornadas) {
+            await loadSingle(jid, p.empresa);
         }
 
-        for (const jornada of jornadas) await renderJornada(jornada);
+        document.getElementById("indicador").textContent = "Pronto ✔";
     }
 
-    async function renderJornada(jornada) {
-        const base = document.querySelector(".container");
-        const clone = base.cloneNode(true);
-        document.body.appendChild(clone);
+    async function loadSingle(jornada_id, empresa_id) {
+        const { data: jornada } = await sb
+            .from("jornada_trabalho_resposta")
+            .select("*")
+            .eq("id_empresa", empresa_id)
+            .eq("id", jornada_id)
+            .maybeSingle();
 
-        fillJornada(jornada, clone);
+        if (!jornada) return;
+
+        createContainer(jornada_id); 
+
+        await fillSections(jornada);
+    }
+
+    async function fillSections(jornada) {
+        const prefix = "j" + jornada.id + "_";
+
+        fillJornada(jornada, prefix);
 
         if (jornada.id_motorista) {
-            const { data: motorista } = await sb
-                .from("usuarios_empresa").select("*")
-                .eq("empresa", jornada.id_empresa).eq("id", jornada.id_motorista).maybeSingle();
-            if (motorista) fillMotorista(motorista, clone);
+            const { data: motorista } = await sb.from("usuarios_empresa")
+                .select("*").eq("empresa", jornada.id_empresa)
+                .eq("id", jornada.id_motorista).maybeSingle();
+            if (motorista) fillMotorista(motorista, prefix);
         }
 
         if (jornada.id_viagem) {
-            const { data: viagem } = await sb
-                .from("viagens").select("*").eq("id", jornada.id_viagem).maybeSingle();
-            if (viagem) fillViagem(viagem, clone);
+            const { data: viagem } = await sb.from("viagens")
+                .select("*").eq("id", jornada.id_viagem).maybeSingle();
+            if (viagem) fillViagem(viagem, prefix);
         }
 
-        const { data: despesas } = await sb
-            .from("despesas").select("*").eq("id_jornada_resposta", jornada.id);
-
-        if (despesas?.length) fillDespesas(despesas, clone);
+        const { data: despesas } = await sb.from("despesas")
+            .select("*").eq("id_jornada_resposta", jornada.id);
+        if (despesas) fillDespesas(despesas, prefix);
 
         if (jornada.id_jornada_trabalho) {
-            const { data: jextra } = await sb
-                .from("jornada_trabalho").select("*").eq("id", jornada.id_jornada_trabalho).maybeSingle();
-            if (jextra) fillJornadaExtra(jextra, clone);
+            const { data: jornada_extra } = await sb.from("jornada_trabalho")
+                .select("*").eq("id", jornada.id_jornada_trabalho).maybeSingle();
+            if (jornada_extra) fillJornadaExtra(jornada_extra, prefix);
         }
     }
 
-    function fillJornada(d, el) {
-        el.querySelector("#placa").textContent = d.placa_veiculo || "-";
-        el.querySelector("#modelo").textContent = "-";
-        el.querySelector("#km").textContent = "-";
-        el.querySelector("#rota").textContent = "";
-        el.querySelector("#cidade").textContent = "-";
-        el.querySelector("#data").textContent = formatDate(d.created_at);
-        el.querySelector("#motorista").textContent = d.nome || "-";
-        el.querySelector("#inicio").textContent = formatDateTime(d.inicio_data);
-        el.querySelector("#fim").textContent = formatDateTime(d.fim_data);
-        el.querySelector("#horas").textContent = convertMinutes(d.total_minutos);
-        el.querySelector("#cliente").textContent = d.cliente || "-";
-        el.querySelector("#assinatura").src = d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
+    /** 🔻 ABDC: IGUAL SEU CÓDIGO ORIGINAL, só com prefixo 🔻 */
+
+    function fillJornada(d, p) {
+        document.getElementById(p+"placa").textContent = d.placa_veiculo || "-";
+        document.getElementById(p+"modelo").textContent = "-";
+        document.getElementById(p+"km").textContent = "-";
+        document.getElementById(p+"rota").textContent = "";
+        document.getElementById(p+"cidade").textContent = "-";
+        document.getElementById(p+"data").textContent = formatDate(d.created_at);
+        document.getElementById(p+"motorista").textContent = d.nome || "-";
+        document.getElementById(p+"inicio").textContent = formatDateTime(d.inicio_data);
+        document.getElementById(p+"fim").textContent = formatDateTime(d.fim_data);
+        document.getElementById(p+"horas").textContent = convertMinutes(d.total_minutos);
+        document.getElementById(p+"cliente").textContent = d.cliente || "-";
+        document.getElementById(p+"assinatura").src = d.assinatura_motorista || "https://i.imgur.com/kEPcXkT.png";
     }
 
-    function fillMotorista(m, el) {
-        el.querySelector("#motorista").textContent = m.nome || "-";
-        if (m.assinatura_digital && m.assinatura_digital !== "-") el.querySelector("#assinatura").src = m.assinatura_digital;
+    function fillMotorista(m, p) {
+        if (m.nome) document.getElementById(p+"motorista").textContent = m.nome;
+        if (m.assinatura_digital && m.assinatura_digital !== "-") {
+            document.getElementById(p+"assinatura").src = m.assinatura_digital;
+        }
     }
 
-    function fillViagem(v, el) {
-        if (v.destino) el.querySelector("#cidade").textContent = v.destino;
+    function fillViagem(v, p) {
+        if (v.destino) document.getElementById(p+"cidade").textContent = v.destino;
         if (v.kminicio !== null && v.kmfinal !== null) {
             let totalkm = Number(v.kmfinal) - Number(v.kminicio);
             totalkm = totalkm < 0 ? 0 : totalkm;
-            el.querySelector("#km").textContent = totalkm + " KM";
+            document.getElementById(p+"km").textContent = totalkm + " KM";
         }
     }
 
-    function fillDespesas(list, el) {
+    function fillJornadaExtra(j, p) {
+        if (j.titulo) document.getElementById(p+"rota").textContent = j.titulo;
+    }
+
+    function fillDespesas(list, p) {
         let html = "";
         list.forEach((d) => {
             html += `<tr>
@@ -129,51 +199,88 @@
                 <td>${d.local || "-"}</td>
             </tr>`;
         });
-        el.querySelector("#tabela-despesas tbody").innerHTML = html;
+        document.querySelector(`#${p}tabela-despesas tbody`).innerHTML = html;
     }
-
-    function fillJornadaExtra(j, el) { if (j.titulo) el.querySelector("#rota").textContent = j.titulo; }
 
     function formatDate(date) { return date ? new Date(date).toLocaleDateString("pt-BR") : "-"; }
     function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
-    function convertMinutes(min) { if (!min) return "-"; const h = Math.floor(min / 60); const m = min % 60; return `${h}h ${m}m`; }
+    function convertMinutes(min) { if (!min) return "-"; const h = Math.floor(min/60); const m = Math.floor(min%60); return `${h}h ${m}m`; }
 
+    /** 🔧 DUPLICAÇÃO DO HTML */
+    function createContainer(id) {
+        const cont = document.querySelector(".container").cloneNode(true);
+        const prefix = "j"+id+"_";
+
+        cont.innerHTML = cont.innerHTML.replace(/id="/g, `id="${prefix}`);
+        document.body.appendChild(cont);
+    }
 </script>
 </head>
 
-<body onload="document.querySelector('.container').remove(); loadData();">
+<body onload="loadData()">
+
+<div id="indicador">Iniciando...</div>
 
 <div class="container">
+
     <img class="logo" src="https://i.imgur.com/f9G8zE7.png" alt="Logo">
+
     <h1>Jornada de Trabalho</h1>
 
     <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
-    <div class="row"><div class="cell"><strong>Placa do Veículo:</strong> <span id="placa"></span></div>
-    <div class="cell"><strong>Marca/Modelo:</strong> <span id="modelo"></span></div>
-    <div class="cell"><strong>KM do Veículo:</strong> <span id="km"></span></div></div>
 
-    <div class="row"><div class="cell"><strong>Rota:</strong> <span id="rota"></span></div>
-    <div class="cell"><strong>Cidade:</strong> <span id="cidade"></span></div>
-    <div class="cell"><strong>Data:</strong> <span id="data"></span></div></div>
+    <div class="row">
+        <div class="cell"><strong>Placa do Veículo:</strong> <span id="placa"></span></div>
+        <div class="cell"><strong>Marca/Modelo:</strong> <span id="modelo"></span></div>
+        <div class="cell"><strong>KM do Veículo:</strong> <span id="km"></span></div>
+    </div>
 
-    <div class="row"><div class="cell"><strong>Motorista:</strong> <span id="motorista"></span></div></div>
+    <div class="row">
+        <div class="cell"><strong>Rota:</strong> <span id="rota"></span></div>
+        <div class="cell"><strong>Cidade:</strong> <span id="cidade"></span></div>
+        <div class="cell"><strong>Data:</strong> <span id="data"></span></div>
+    </div>
+
+    <div class="row">
+        <div class="cell"><strong>Motorista:</strong> <span id="motorista"></span></div>
+    </div>
 
     <div class="section-title">2 - DADOS DE HORAS</div>
-    <div class="row"><div class="cell"><strong>Início Jornada:</strong> <span id="inicio"></span></div>
-    <div class="cell"><strong>Fim Jornada:</strong> <span id="fim"></span></div>
-    <div class="cell"><strong>Horas Trabalhadas:</strong> <span id="horas"></span></div></div>
-    <div class="row"><div class="cell"><strong>Cliente:</strong> <span id="cliente"></span></div></div>
+
+    <div class="row">
+        <div class="cell"><strong>Início Jornada:</strong> <span id="inicio"></span></div>
+        <div class="cell"><strong>Fim Jornada:</strong> <span id="fim"></span></div>
+        <div class="cell"><strong>Horas Trabalhadas:</strong> <span id="horas"></span></div>
+    </div>
+
+    <div class="row">
+        <div class="cell"><strong>Cliente:</strong> <span id="cliente"></span></div>
+    </div>
 
     <div class="section-title">3 - DADOS DESPESAS</div>
+
     <table id="tabela-despesas">
-        <thead><tr><th>Categorias</th><th>Litros</th><th>Valor Litros</th><th>Valor Total</th><th>Local</th></tr></thead>
+        <thead>
+            <tr>
+                <th>Categorias</th>
+                <th>Litros</th>
+                <th>Valor Litros</th>
+                <th>Valor Total</th>
+                <th>Local</th>
+            </tr>
+        </thead>
         <tbody></tbody>
     </table>
 
     <div class="section-title">4 - ASSINATURA</div>
-    <img id="assinatura" src="" alt="Assinatura">
-    <div>Assinatura do Motorista:</div>
-    <div>Assinatura de Aprovação:</div>
+
+    <img id="assinatura" class="signature-img" src="" alt="Assinatura">
+
+    <div class="signature-area">
+        <div class="signature-box">Assinatura do Motorista:</div>
+        <div class="signature-box">Assinatura de Aprovação:</div>
+    </div>
+
 </div>
 
 </body>
