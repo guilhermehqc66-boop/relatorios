@@ -47,7 +47,7 @@
         font-size: 14px;
         flex: 1;
     }
-    #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada-base {
+    #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada {
         background: green;
         color: white;
         padding: 6px 10px;
@@ -59,7 +59,7 @@
     #indicador-viagem { background: #0075ff; }
     #indicador-despesa { background: #3ca83c; }
     #indicador-motorista { background: #c96e00; }
-    #indicador-jornada-base { background: #8a008a; }
+    #indicador-jornada { background: #d4b100; }
 
     table {
         width: 100%;
@@ -73,7 +73,7 @@
         text-align: center;
     }
     @media print {
-        #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada-base { display: none; }
+        #indicador-viagem, #indicador-despesa, #indicador-motorista, #indicador-jornada { display: none; }
         body { background: white; }
         .container { box-shadow: none; width: 100%; }
     }
@@ -89,7 +89,7 @@
     function showIndicadorViagem() { document.getElementById("indicador-viagem").style.display = "inline-block"; }
     function showIndicadorDespesa() { document.getElementById("indicador-despesa").style.display = "inline-block"; }
     function showIndicadorMotorista() { document.getElementById("indicador-motorista").style.display = "inline-block"; }
-    function showIndicadorBase() { document.getElementById("indicador-jornada-base").style.display = "inline-block"; }
+    function showIndicadorJornada() { document.getElementById("indicador-jornada").style.display = "inline-block"; }
 
     function getParams() {
         const p = new URLSearchParams(window.location.search);
@@ -103,7 +103,7 @@
             return;
         }
 
-        // 📌 Buscar JORNADA RESPOSTA
+        // 📌 Buscar JORNADA_RESPOSTA (principal)
         const { data: jornada } = await sb
             .from("jornada_trabalho_resposta")
             .select("*")
@@ -115,17 +115,7 @@
         if (!jornada) return alert("Jornada não encontrada.");
         fillJornada(jornada);
 
-        // 🆕 📌 Buscar JORNADA BASE (jornada_trabalho)
-        if (jornada.id_jornada_trabalho) {
-            const { data: jornadaBase } = await sb
-                .from("jornada_trabalho")
-                .select("*")
-                .eq("id", jornada.id_jornada_trabalho)
-                .maybeSingle();
-            if (jornadaBase) { showIndicadorBase(); }
-        }
-
-        // 📌 Buscar MOTORISTA
+        // 📌 Buscar USUÁRIO/MOTORISTA
         if (jornada.id_motorista) {
             const { data: motorista } = await sb
                 .from("usuarios_empresa")
@@ -147,7 +137,7 @@
             if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
-        // 📌 Buscar DESPESAS (lista)
+        // 📌 Buscar DESPESAS
         const { data: despesas } = await sb
             .from("despesas")
             .select("*")
@@ -157,13 +147,24 @@
             fillDespesas(despesas);
             showIndicadorDespesa();
         }
+
+        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
+        if (jornada.id_jornada_trabalho) {
+            const { data: jornada_extra } = await sb
+                .from("jornada_trabalho")
+                .select("*")
+                .eq("id", jornada.id_jornada_trabalho)
+                .maybeSingle();
+
+            if (jornada_extra) { fillJornadaExtra(jornada_extra); showIndicadorJornada(); }
+        }
     }
 
     function fillJornada(d) {
-        document.getElementById("placa").textContent = "-";
+        document.getElementById("placa").textContent = d.placa_veiculo || "-"; // 🆕 AGORA PUXA DA JORNADA RESPOSTA
         document.getElementById("modelo").textContent = "-";
         document.getElementById("km").textContent = "-";
-        document.getElementById("rota").textContent = "";
+        document.getElementById("rota").textContent = ""; // será preenchido pela jornada_trabalho
         document.getElementById("cidade").textContent = "-";
         document.getElementById("data").textContent = formatDate(d.created_at);
         document.getElementById("motorista").textContent = d.nome || "-";
@@ -183,6 +184,11 @@
 
     function fillViagem(v) {
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
+    }
+
+    // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
+    function fillJornadaExtra(j) {
+        if (j.titulo) document.getElementById("rota").textContent = j.titulo;
     }
 
     function fillDespesas(list) {
@@ -215,10 +221,10 @@
 
     <h1>Jornada de Trabalho</h1>
 
-    <div id="indicador-jornada-base">📎 Dados da tabela JORNADA_TRABALHO foram carregados</div>
     <div id="indicador-motorista">👨‍✈️ Dados da tabela USUÁRIOS_EMPRESA foram carregados</div>
     <div id="indicador-viagem">🚚 Dados da tabela VIAGENS foram carregados</div>
     <div id="indicador-despesa">💰 Dados da tabela DESPESAS foram carregados</div>
+    <div id="indicador-jornada">📌 Dados da tabela JORNADA_TRABALHO foram carregados</div>
 
     <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
 
