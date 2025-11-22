@@ -127,14 +127,19 @@
             if (motorista) { fillMotorista(motorista); showIndicadorMotorista(); }
         }
 
-        // 📌 Buscar VIAGEM
+        // 📌 Buscar VIAGEM + adicionar cálculo KM
         if (jornada.id_viagem) {
             const { data: viagem } = await sb
                 .from("viagens")
                 .select("*")
                 .eq("id", jornada.id_viagem)
                 .maybeSingle();
-            if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
+
+            if (viagem) { 
+                fillViagem(viagem); 
+                calculateKM(viagem); 
+                showIndicadorViagem(); 
+            }
         }
 
         // 📌 Buscar DESPESAS
@@ -148,7 +153,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
+        // 📌 Buscar JORNADA_TRABALHO (rota)
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -182,20 +187,21 @@
         }
     }
 
-    // 🆕 KM Calculado!
     function fillViagem(v) {
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
-
-        if (v.kminicio != null && v.kmfinal != null && v.kmfinal > v.kminicio) {
-            const diff = Number(v.kmfinal) - Number(v.kminicio);
-            document.getElementById("km").textContent = diff + " km";
-        } else {
-            document.getElementById("km").textContent = "-";
-        }
     }
 
+    // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
     function fillJornadaExtra(j) {
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
+    }
+
+    // 🆕 CALCULAR O KM RODADO
+    function calculateKM(v) {
+        if (v.kminicio != null && v.kmfinal != null) {
+            const km = v.kmfinal - v.kminicio;
+            document.getElementById("km").textContent = km > 0 ? `${km} km` : "-";
+        }
     }
 
     function fillDespesas(list) {
