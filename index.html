@@ -127,19 +127,14 @@
             if (motorista) { fillMotorista(motorista); showIndicadorMotorista(); }
         }
 
-        // 📌 Buscar VIAGEM + adicionar cálculo KM
+        // 📌 Buscar VIAGEM
         if (jornada.id_viagem) {
             const { data: viagem } = await sb
                 .from("viagens")
                 .select("*")
                 .eq("id", jornada.id_viagem)
                 .maybeSingle();
-
-            if (viagem) { 
-                fillViagem(viagem); 
-                calculateKM(viagem); 
-                showIndicadorViagem(); 
-            }
+            if (viagem) { fillViagem(viagem); showIndicadorViagem(); }
         }
 
         // 📌 Buscar DESPESAS
@@ -153,7 +148,7 @@
             showIndicadorDespesa();
         }
 
-        // 📌 Buscar JORNADA_TRABALHO (rota)
+        // 📌 Buscar JORNADA_TRABALHO (tabela nova)
         if (jornada.id_jornada_trabalho) {
             const { data: jornada_extra } = await sb
                 .from("jornada_trabalho")
@@ -166,10 +161,10 @@
     }
 
     function fillJornada(d) {
-        document.getElementById("placa").textContent = d.placa_veiculo || "-";
+        document.getElementById("placa").textContent = d.placa_veiculo || "-"; 
         document.getElementById("modelo").textContent = "-";
-        document.getElementById("km").textContent = "-";
-        document.getElementById("rota").textContent = "";
+        document.getElementById("km").textContent = "-"; 
+        document.getElementById("rota").textContent = ""; 
         document.getElementById("cidade").textContent = "-";
         document.getElementById("data").textContent = formatDate(d.created_at);
         document.getElementById("motorista").textContent = d.nome || "-";
@@ -189,6 +184,12 @@
 
     function fillViagem(v) {
         if (v.destino) document.getElementById("cidade").textContent = v.destino;
+
+        // 🆕 Cálculo do KM do Veículo
+        if (v.kminicio != null && v.camkfinal != null) {
+            const kmCalculado = v.camkfinal - v.kminicio;
+            document.getElementById("km").textContent = kmCalculado >= 0 ? kmCalculado : "-";
+        }
     }
 
     // 🆕 TITULO DA JORNADA_TRABALHO AGORA É A ROTA
@@ -196,104 +197,8 @@
         if (j.titulo) document.getElementById("rota").textContent = j.titulo;
     }
 
-    // 🆕 CALCULAR O KM RODADO
-    function calculateKM(v) {
-        if (v.kminicio != null && v.kmfinal != null) {
-            const km = v.kmfinal - v.kminicio;
-            document.getElementById("km").textContent = km > 0 ? `${km} km` : "-";
-        }
-    }
-
     function fillDespesas(list) {
         let html = "";
         list.forEach((d) => {
             html += `<tr>
-                <td>${d.tipo || "-"}</td>
-                <td>${d.total_litros || "-"}</td>
-                <td>${d.valor_litro || "-"}</td>
-                <td>${d.valor_total || "-"}</td>
-                <td>${d.local || "-"}</td>
-            </tr>`;
-        });
-        document.querySelector("#tabela-despesas tbody").innerHTML = html;
-    }
-
-    function formatDate(date) { return date ? new Date(date).toLocaleDateString("pt-BR") : "-"; }
-    function formatDateTime(date) { return date ? new Date(date).toLocaleString("pt-BR") : "-"; }
-    function convertMinutes(min) {
-        if (!min) return "-"; const h = Math.floor(min / 60); const m = Math.floor(min % 60); return `${h}h ${m}m`;
-    }
-</script>
-</head>
-
-<body onload="loadData()">
-
-<div class="container">
-
-    <img class="logo" src="https://i.imgur.com/f9G8zE7.png" alt="Logo">
-
-    <h1>Jornada de Trabalho</h1>
-
-    <div id="indicador-motorista">👨‍✈️ Dados da tabela USUÁRIOS_EMPRESA foram carregados</div>
-    <div id="indicador-viagem">🚚 Dados da tabela VIAGENS foram carregados</div>
-    <div id="indicador-despesa">💰 Dados da tabela DESPESAS foram carregados</div>
-    <div id="indicador-jornada">📌 Dados da tabela JORNADA_TRABALHO foram carregados</div>
-
-    <div class="section-title">1 - DADOS DOS VEÍCULOS</div>
-
-    <div class="row">
-        <div class="cell"><strong>Placa do Veículo:</strong> <span id="placa"></span></div>
-        <div class="cell"><strong>Marca/Modelo:</strong> <span id="modelo"></span></div>
-        <div class="cell"><strong>KM do Veículo:</strong> <span id="km"></span></div>
-    </div>
-
-    <div class="row">
-        <div class="cell"><strong>Rota:</strong> <span id="rota"></span></div>
-        <div class="cell"><strong>Cidade:</strong> <span id="cidade"></span></div>
-        <div class="cell"><strong>Data:</strong> <span id="data"></span></div>
-    </div>
-
-    <div class="row">
-        <div class="cell"><strong>Motorista:</strong> <span id="motorista"></span></div>
-    </div>
-
-    <div class="section-title">2 - DADOS DE HORAS</div>
-
-    <div class="row">
-        <div class="cell"><strong>Início Jornada:</strong> <span id="inicio"></span></div>
-        <div class="cell"><strong>Fim Jornada:</strong> <span id="fim"></span></div>
-        <div class="cell"><strong>Horas Trabalhadas:</strong> <span id="horas"></span></div>
-    </div>
-
-    <div class="row">
-        <div class="cell"><strong>Cliente:</strong> <span id="cliente"></span></div>
-    </div>
-
-    <div class="section-title">3 - DADOS DESPESAS</div>
-
-    <table id="tabela-despesas">
-        <thead>
-            <tr>
-                <th>Categorias</th>
-                <th>Litros</th>
-                <th>Valor Litros</th>
-                <th>Valor Total</th>
-                <th>Local</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
-    <div class="section-title">4 - ASSINATURA</div>
-
-    <img id="assinatura" class="signature-img" src="" alt="Assinatura">
-
-    <div class="signature-area">
-        <div class="signature-box">Assinatura do Motorista:</div>
-        <div class="signature-box">Assinatura de Aprovação:</div>
-    </div>
-
-</div>
-
-</body>
-</html>
+                <td>${d.tipo || "-"}</td
